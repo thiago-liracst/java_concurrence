@@ -1,4 +1,3 @@
-import java.util.concurrent.*;
 class LockOne implements Lock {
     private final boolean[] flag = new boolean[2];
     // thread-local index, 0 or 1

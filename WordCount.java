@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.concurrent.Semaphore;
 
 public class WordCount {
     
@@ -28,21 +29,31 @@ public class WordCount {
     // │     ├── ...
     // │     └── file
     public static void main(String[] args) {
-        if (args.length != 1) {
-            System.err.println("Usage: java WordCount <root_directory>");
-            System.exit(1);
-        }
+        //if (args.length != 1) {
+        //    System.err.println("Usage: java WordCount <root_directory>");
+        //    System.exit(1);
+        //}
 
-        String rootPath = args[0];
+        //String rootPath = args[0];
+        String rootPath = "<root dir>";
         File rootDir = new File(rootPath);
         File[] subdirs = rootDir.listFiles();
         int count = 0;
+        Semaphore mutex = new Semaphore(1);
+        Thread[] processos = new Thread[subdirs.length];
 
         if (subdirs != null) {
-            for (File subdir : subdirs) {
-                if (subdir.isDirectory()) {
-                    String dirPath = rootPath + "/" + subdir.getName();
-                    count += wcDir(dirPath);
+            for (int i=0; i<subdirs.length; i++) {
+                processos[i] = new Thread();
+                processos[i].start();
+                if (subdirs[i].isDirectory()) {
+                    String dirPath = rootPath + "/" + subdirs[i].getName();
+                    try {
+                        mutex.acquireUninterruptibly();
+                        count += wcDir(dirPath);
+                    } finally{
+                        mutex.release();
+                    }
                 }
             }
         }
@@ -56,6 +67,7 @@ public class WordCount {
     }
 
     public static int wcFile(String filePath) {
+        System.out.println("Lendo arquivo: " + filePath);
         try {
             BufferedReader reader = new BufferedReader(new FileReader(filePath));
             StringBuilder fileContent = new StringBuilder();
@@ -75,6 +87,7 @@ public class WordCount {
     }
 
     public static int wcDir(String dirPath) {
+        System.out.println("Lendo diretório: " + dirPath);
         File dir = new File(dirPath);
         File[] files = dir.listFiles();
         int count = 0;
@@ -87,6 +100,7 @@ public class WordCount {
             }
             return count;
         }
+        System.out.println("Terminei de ler diretório: " + dirPath);
         return count;
     }
 }
